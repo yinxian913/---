@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>粉色主题转盘应用</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #fdf0f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #d63384;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .temp-result {
+            margin: 10px 0 20px 0;
+            padding: 10px 20px;
+            background: #fce4ec;
+            border-radius: 10px;
+            border: 2px dashed #d63384;
+            text-align: center;
+            min-width: 200px;
+        }
+        
+        .temp-result-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d63384;
+        }
+        
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(214, 51, 132, 0.3);
+            border: 5px solid #f8bbd9;
+        }
+        
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: #f8bbd9;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border: 3px solid #d63384;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .wheel-center:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 40px;
+            background: #d63384;
+            clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+            z-index: 20;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #fdf0f5;
+            border: 1px solid #f8bbd9;
+        }
+        
+        h2 {
+            margin-bottom: 10px;
+            color: #d63384;
+            font-size: 18px;
+            border-bottom: 1px solid #f8bbd9;
+            padding-bottom: 5px;
+        }
+        
+        input, button, textarea {
+            padding: 8px 12px;
+            margin: 5px;
+            border: 1px solid #f8bbd9;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        input, textarea {
+            background: white;
+            color: #333;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        button {
+            background: #f48fb1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #ec407a;
+        }
+        
+        .items-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #f8bbd9;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #fce4ec;
+        }
+        
+        .item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .edit-btn {
+            background: #f8bbd9;
+            color: #333;
+        }
+        
+        .edit-btn:hover {
+            background: #f48fb1;
+        }
+        
+        .remove-btn {
+            background: #f48fb1;
+            color: white;
+        }
+        
+        .sector {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center;
+        }
+        
+        .sector-text {
+            position: absolute;
+            width: 40%;
+            text-align: center;
+            transform-origin: center;
+            font-weight: bold;
+            color: white;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 80%;
+        }
+        
+        .result-box {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border: 3px solid #d63384;
+            z-index: 1000;
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        
+        .result-box h3 {
+            color: #d63384;
+            margin-bottom: 15px;
+        }
+        
+        .result-box p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .result-box button {
+            background: #f48fb1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid #d63384;
+        }
+        
+        .modal h3 {
+            color: #d63384;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        
+        .random-generator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .random-result {
+            font-weight: bold;
+            color: #d63384;
+            font-size: 18px;
+            width: 80px;
+            text-align: center;
+            padding: 8px 12px;
+            background: #fce4ec;
+            border-radius: 5px;
+            border: 1px solid #f8bbd9;
+            transition: transform 0.3s;
+        }
+        
+        .number-input {
+            width: 80px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="wheel-title">我的转盘</h1>
+        
+        <div class="temp-result">
+            <div class="temp-result-text" id="wheel-result">？？？</div>
+        </div>
+        
+        <div class="wheel-container" id="wheel-container">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel">
+                <!-- 转盘内容将由JavaScript动态生成 -->
+            </div>
+            <div class="wheel-center" id="center-spin"></div>
+        </div>
+        
+        <div class="controls">
+            <!-- 随机数生成器放在转盘设置上面 -->
+            <div class="control-group">
+                <h2>随机数生成器</h2>
+                <div class="random-generator">
+                    <input type="number" id="min-value" class="number-input" value="1" min="0">
+                    <span>到</span>
+                    <input type="number" id="max-value" class="number-input" value="100" min="1">
+                    <button id="generate-random">生成随机数</button>
+                    <div class="random-result" id="random-result">-</div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h2>转盘设置</h2>
+                <div>
+                    <label>转盘名称：</label>
+                    <input type="text" id="wheel-name-input" value="我的转盘">
+                    <button id="update-name">更新名称</button>
+                </div>
+                <div>
+                    <label>字体大小：</label>
+                    <input type="range" id="font-size" min="10" max="24" value="14">
+                    <span id="font-size-value">14px</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h2>转盘内容</h2>
+                <div>
+                    <input type="text" id="new-item" placeholder="输入新内容">
+                    <button id="add-item">添加</button>
+                    <button id="add-multiple">批量添加</button>
+                </div>
+                <div class="items-list" id="items-list">
+                    <!-- 转盘内容列表 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="result-box" id="result-box">
+        <h3>宝宝，做吧🥺</h3>
+        <p><span id="selected-item"></span></p>
+        <button id="close-result">确定</button>
+    </div>
+    
+    <!-- 批量添加模态框 -->
+    <div class="modal" id="batch-modal">
+        <div class="modal-content">
+            <h3>批量添加内容</h3>
+            <p>请在下方输入框中输入内容，每行一个项目：</p>
+            <textarea id="batch-input" placeholder="输入内容，每行一个项目"></textarea>
+            <div class="modal-buttons">
+                <button id="confirm-batch">确认添加</button>
+                <button id="cancel-batch">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始转盘内容
+        let wheelItems = ['过来'];
+        let isSpinning = false;
+        let currentRotation = 0;
+        let targetRotation = 0;
+        
+        // DOM元素
+        const wheel = document.getElementById('wheel');
+        const wheelContainer = document.getElementById('wheel-container');
+        const wheelTitle = document.getElementById('wheel-title');
+        const wheelResult = document.getElementById('wheel-result');
+        const wheelNameInput = document.getElementById('wheel-name-input');
+        const updateNameBtn = document.getElementById('update-name');
+        const fontSizeSlider = document.getElementById('font-size');
+        const fontSizeValue = document.getElementById('font-size-value');
+        const newItemInput = document.getElementById('new-item');
+        const addItemBtn = document.getElementById('add-item');
+        const addMultipleBtn = document.getElementById('add-multiple');
+        const itemsList = document.getElementById('items-list');
+        const centerSpin = document.getElementById('center-spin');
+        const resultBox = document.getElementById('result-box');
+        const selectedItem = document.getElementById('selected-item');
+        const closeResultBtn = document.getElementById('close-result');
+        const batchModal = document.getElementById('batch-modal');
+        const batchInput = document.getElementById('batch-input');
+        const confirmBatchBtn = document.getElementById('confirm-batch');
+        const cancelBatchBtn = document.getElementById('cancel-batch');
+        const minValueInput = document.getElementById('min-value');
+        const maxValueInput = document.getElementById('max-value');
+        const generateRandomBtn = document.getElementById('generate-random');
+        const randomResult = document.getElementById('random-result');
+        
+        // 三种粉色颜色方案
+        const pinkColors = [
+            '#fce4ec', // 浅粉
+            '#f8bbd9', // 粉
+            '#f48fb1'  // 深粉
+        ];
+        
+        // 改进的文字缩略函数
+        function truncateText(text, maxLength = 8) {
+            if (text.length <= maxLength) return text;
+            
+            // 计算保留的字符数
+            const keepLength = Math.floor(maxLength / 2);
+            const start = text.substring(0, keepLength);
+            const end = text.substring(text.length - keepLength);
+            
+            return start + '...' + end;
+        }
+        
+        // 初始化转盘
+        function initWheel() {
+            wheel.innerHTML = '';
+            const itemCount = wheelItems.length;
+            const angle = 360 / itemCount;
+            
+            wheelItems.forEach((item, index) => {
+                // 创建扇区
+                const sector = document.createElement('div');
+                sector.className = 'sector';
+                
+                // 使用clip-path创建精确的扇形
+                const startAngle = angle * index;
+                const endAngle = angle * (index + 1);
+                
+                // 计算扇形的四个点
+                const x1 = 50 + 50 * Math.cos((startAngle - 90) * Math.PI / 180);
+                const y1 = 50 + 50 * Math.sin((startAngle - 90) * Math.PI / 180);
+                const x2 = 50 + 50 * Math.cos((endAngle - 90) * Math.PI / 180);
+                const y2 = 50 + 50 * Math.sin((endAngle - 90) * Math.PI / 180);
+                
+                // 创建扇形路径
+                const largeArcFlag = angle > 180 ? 1 : 0;
+                const pathData = [
+                    `M 50 50`,
+                    `L ${x1} ${y1}`,
+                    `A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                    'Z'
+                ].join(' ');
+                
+                // 创建SVG元素来精确绘制扇形
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '100%');
+                svg.setAttribute('height', '100%');
+                svg.setAttribute('viewBox', '0 0 100 100');
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                
+                // 使用三种粉色循环
+                const colorIndex = index % pinkColors.length;
+                path.setAttribute('fill', pinkColors[colorIndex]);
+                
+                svg.appendChild(path);
+                sector.appendChild(svg);
+                
+                // 创建扇区文本 - 从大圆边缘向内延伸
+                const text = document.createElement('div');
+                text.className = 'sector-text';
+                text.textContent = truncateText(item); // 使用缩略文本
+                text.title = item; // 添加完整文本作为提示
+                
+                // 计算文本位置和旋转角度 - 从大圆边缘向内延伸
+                const textAngle = startAngle + angle / 2;
+                // 从大圆边缘向内延伸，距离圆心更远
+                const distanceFromCenter = 70; // 从边缘开始，距离圆心更远
+                
+                // 调整文本旋转，使其平行于扇形边缘
+                text.style.transform = `rotate(${textAngle}deg) translate(0, -${distanceFromCenter}px) rotate(${90}deg)`;
+                text.style.fontSize = `${fontSizeSlider.value}px`;
+                
+                sector.appendChild(text);
+                wheel.appendChild(sector);
+            });
+            
+            renderItemsList();
+            
+            // 初始化时更新"？？？"显示
+            updateResultDisplay();
+        }
+        
+        // 渲染项目列表
+        function renderItemsList() {
+            itemsList.innerHTML = '';
+            wheelItems.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'item';
+                itemElement.innerHTML = `
+                    <span title="${item}">${truncateText(item, 10)}</span>
+                    <div class="item-actions">
+                        <button class="edit-item edit-btn" data-index="${index}">编辑</button>
+                        <button class="remove-item remove-btn" data-index="${index}">删除</button>
+                    </div>
+                `;
+                itemsList.appendChild(itemElement);
+            });
+            
+            // 添加删除事件
+            document.querySelectorAll('.remove-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    wheelItems.splice(index, 1);
+                    initWheel();
+                });
+            });
+            
+            // 添加编辑事件
+            document.querySelectorAll('.edit-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const newValue = prompt('编辑项目内容：', wheelItems[index]);
+                    if (newValue !== null && newValue.trim() !== '') {
+                        wheelItems[index] = newValue.trim();
+                        initWheel();
+                    }
+                });
+            });
+        }
+        
+        // 获取当前指针指向的选项 - 修复版
+        function getCurrentSelection() {
+            const itemCount = wheelItems.length;
+            if (itemCount === 0) return "？？？";
+            
+            const angle = 360 / itemCount;
+            
+            // 计算当前旋转角度（取模360）
+            const normalizedRotation = currentRotation % 360;
+            
+            // 计算指针指向的选项索引
+            // 由于指针在顶部，我们需要将角度偏移90度
+            let selectedIndex = Math.floor((normalizedRotation + 90) / angle) % itemCount;
+            
+            // 确保索引在有效范围内
+            if (selectedIndex < 0) selectedIndex += itemCount;
+            if (selectedIndex >= itemCount) selectedIndex %= itemCount;
+            
+            return wheelItems[selectedIndex];
+        }
+        
+        // 更新结果显示
+        function updateResultDisplay() {
+            wheelResult.textContent = getCurrentSelection();
+        }
+        
+        // 旋转转盘
+        function spinWheel() {
+            if (isSpinning || wheelItems.length === 0) return;
+            
+            isSpinning = true;
+            
+            // 随机选择一个项目
+            const selectedIndex = Math.floor(Math.random() * wheelItems.length);
+            const anglePerItem = 360 / wheelItems.length;
+            
+            // 计算目标角度 - 确保指针指向选中的项目
+            // 指针在顶部(0度)，所以需要将选中的项目旋转到指针位置
+            // 由于扇形的中心角度是从起始角度到结束角度，我们需要将指针指向扇形的中心
+            const selectedAngle = 360 - (selectedIndex * anglePerItem + anglePerItem / 2);
+            
+            // 随机生成旋转时间 (1-10秒)
+            const spinDuration = Math.random() * 9 + 1; // 1-10秒
+            
+            // 随机生成旋转圈数 (5-15圈)，确保每次都有足够的旋转
+            const spinCircles = Math.floor(Math.random() * 11) + 5; // 5-15圈
+            
+            targetRotation = 360 * spinCircles + selectedAngle;
+            
+            // 设备震动
+            if (navigator.vibrate) {
+                navigator.vibrate(spinDuration * 1000); // 震动持续整个旋转过程
+            }
+            
+            // 记录开始时间和初始角度
+            const startTime = Date.now();
+            const startRotation = currentRotation;
+            
+            // 设置旋转动画
+            wheel.style.transition = `transform ${spinDuration}s cubic-bezier(0.1, 0.8, 0.2, 1)`;
+            wheel.style.transform = `rotate(${targetRotation}deg)`;
+            
+            // 在旋转过程中更新显示
+            const updateInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / (spinDuration * 1000), 1);
+                
+                // 计算当前旋转角度
+                currentRotation = startRotation + (targetRotation - startRotation) * progress;
+                
+                // 更新显示当前指针指向的选项
+                updateResultDisplay();
+            }, 50);
+            
+            // 显示结果
+            setTimeout(() => {
+                clearInterval(updateInterval);
+                isSpinning = false;
+                currentRotation = targetRotation; // 确保最终角度准确
+                
+                // 确保最终显示与指针指向一致
+                updateResultDisplay();
+                
+                selectedItem.textContent = getCurrentSelection();
+                resultBox.style.display = 'block';
+            }, spinDuration * 1000);
+        }
+        
+        // 生成随机数
+        function generateRandomNumber() {
+            const min = parseInt(minValueInput.value) || 0;
+            const max = parseInt(maxValueInput.value) || 100;
+            
+            if (min >= max) {
+                alert('最小值必须小于最大值');
+                return;
+            }
+            
+            const randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
+            randomResult.textContent = randomNum;
+            
+            // 使用transform而不是改变方框大小
+            randomResult.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                randomResult.style.transform = 'scale(1)';
+            }, 300);
+        }
+        
+        // 事件监听
+        updateNameBtn.addEventListener('click', () => {
+            wheelTitle.textContent = wheelNameInput.value;
+        });
+        
+        fontSizeSlider.addEventListener('input', () => {
+            fontSizeValue.textContent = `${fontSizeSlider.value}px`;
+            const texts = document.querySelectorAll('.sector-text');
+            texts.forEach(text => {
+                text.style.fontSize = `${fontSizeSlider.value}px`;
+            });
+        });
+        
+        addItemBtn.addEventListener('click', () => {
+            const newItem = newItemInput.value.trim();
+            if (newItem) {
+                wheelItems.push(newItem);
+                newItemInput.value = '';
+                initWheel();
+            }
+        });
+        
+        // 批量添加功能
+        addMultipleBtn.addEventListener('click', () => {
+            batchInput.value = '';
+            batchModal.style.display = 'flex';
+        });
+        
+        confirmBatchBtn.addEventListener('click', () => {
+            const items = batchInput.value.split('\n')
+                .map(item => item.trim())
+                .filter(item => item !== '');
+            
+            if (items.length > 0) {
+                wheelItems.push(...items);
+                batchModal.style.display = 'none';
+                initWheel();
+            }
+        });
+        
+        cancelBatchBtn.addEventListener('click', () => {
+            batchModal.style.display = 'none';
+        });
+        
+        // 点击转盘任何地方旋转
+        wheelContainer.addEventListener('click', spinWheel);
+        
+        // 中心圆圈点击旋转
+        centerSpin.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止事件冒泡到wheelContainer
+            spinWheel();
+        });
+        
+        closeResultBtn.addEventListener('click', () => {
+            resultBox.style.display = 'none';
+        });
+        
+        // 随机数生成器
+        generateRandomBtn.addEventListener('click', generateRandomNumber);
+        
+        // 禁止输入框缩放页面
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                document.body.style.zoom = "100%";
+            }
+        });
+        
+        // 初始化
+        initWheel();
+    </script>
+</body>
+</html>
